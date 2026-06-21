@@ -1,0 +1,39 @@
+name: Auto Update Live Stream
+
+on:
+  push:
+    branches:
+      - main
+  schedule:
+    # 每 30 分钟自动执行一次 (UTC时间)
+    - cron: '*/30 * * * *'
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.x'
+
+    - name: Install dependencies
+      run: |
+        pip install requests
+
+    - name: Run update script
+      run: python update_live.py
+    
+    # 修改最后一步：提交变动
+    - name: Commit and Push changes
+      run: |
+        git config --local user.email "actions@github.com"
+        git config --local user.name "GitHub Actions"
+        # 显式把两个文件都加入暂存区
+        git add live.m3u live.m3u8
+        # 只有在内容有变化时才执行提交，避免无意义的报错
+        git diff --cached --quiet || (git commit -m "自动更新直播源格式 (.m3u & .m3u8)" && git push)
